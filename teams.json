@@ -1,0 +1,130 @@
+{
+  "green": {
+    "1": {
+      "owner": "Janice",
+      "wins": [
+        "2011",
+        "2021"
+      ]
+    },
+    "2": {
+      "owner": "Tommy",
+      "wins": [
+        "2013",
+        "2016"
+      ]
+    },
+    "3": {
+      "owner": "Alli",
+      "wins": [
+        ""
+      ]
+    },
+    "4": {
+      "owner": "Zo",
+      "wins": [
+        ""
+      ]
+    },
+    "5": {
+      "owner": "Kelly",
+      "wins": [
+        ""
+      ]
+    },
+    "6": {
+      "owner": "Nima",
+      "wins": [
+        ""
+      ]
+    },
+    "7": {
+      "owner": "Jim/Nancy",
+      "wins": [
+        "2015",
+        "2019"
+      ]
+    },
+    "8": {
+      "owner": "Jimmy",
+      "wins": [
+        "2023"
+      ]
+    },
+    "9": {
+      "owner": "Jackie",
+      "wins": [
+        "2017",
+        "2018"
+      ]
+    },
+    "10": {
+      "owner": "Shane",
+      "wins": [
+        "2022"
+      ]
+    }
+  },
+  "white": {
+    "1": {
+      "owner": "Brian",
+      "wins": [
+        "2024"
+      ]
+    },
+    "2": {
+      "owner": "Kevin",
+      "wins": [
+        ""
+      ]
+    },
+    "3": {
+      "owner": "John",
+      "wins": [
+        ""
+      ]
+    },
+    "4": {
+      "owner": "Will",
+      "wins": [
+        ""
+      ]
+    },
+    "10": {
+      "owner": "Bri",
+      "wins": [
+        ""
+      ]
+    },
+    "12": {
+      "owner": "Kyle",
+      "wins": [
+        "2020"
+      ]
+    },
+    "13": {
+      "owner": "Tricia",
+      "wins": [
+        "2012"
+      ]
+    },
+    "16": {
+      "owner": "Irene/Caroline",
+      "wins": [
+        ""
+      ]
+    },
+    "17": {
+      "owner": "Emma/Andrew",
+      "wins": [
+        ""
+      ]
+    },
+    "18": {
+      "owner": "Jeanette",
+      "wins": [
+        "2014"
+      ]
+    }
+  }
+}

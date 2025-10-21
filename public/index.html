@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hogan Fantasy Football League Dashboard</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const PasswordModal = ({ onAuthenticated }) => {
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState(false);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (password === 'jack') {
+                    sessionStorage.setItem('authenticated', 'true');
+                    onAuthenticated();
+                } else {
+                    setError(true);
+                    setPassword('');
+                    setTimeout(() => setError(false), 3000);
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+                        <h2 className="text-2xl font-bold text-green-600 mb-2">🏈 Hogan Fantasy Football</h2>
+                        <p className="text-gray-600 mb-6">Enter password to access dashboard</p>
+                        <form onSubmit={handleSubmit}>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Password"
+                                autoComplete="off"
+                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none mb-4"
+                                autoFocus
+                            />
+                            <button
+                                type="submit"
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition-colors"
+                            >
+                                Enter
+                            </button>
+                            {error && (
+                                <p className="text-red-600 text-sm mt-3 text-center">Incorrect password</p>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const LeagueSummary = () => {
+            const [authenticated, setAuthenticated] = useState(false);
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [lastUpdated, setLastUpdated] = useState(null);
+            const [selectedRoster, setSelectedRoster] = useState(null);
+            const [selectedMatchup, setSelectedMatchup] = useState(null);
+
+            useEffect(() => {
+                if (sessionStorage.getItem('authenticated') === 'true') {
+                    setAuthenticated(true);
+                }
+            }, []);
+
+            const fetchData = async () => {
+                setLoading(true);
+                try {
+                    const response = await fetch('/api/summary');
+                    if (!response.ok) throw new Error('Failed to fetch league data');
+                    const result = await response.json();
+                    setData(result);
+                    setLastUpdated(new Date());
+                    setError(null);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const fetchRoster = async (division, teamId, teamName) => {
+                try {
+                    const response = await fetch(`/api/roster/${division}/${teamId}`);
+                    const roster = await response.json();
+                    setSelectedRoster({ ...roster, division });
+                } catch (err) {
+                    console.error('Error fetching roster:', err);
+                }
+            };
+
+            const fetchMatchupDetails = async (division, homeTeamId, awayTeamId) => {
+                try {
+                    const response = await fetch(`/api/matchup/${division}/${homeTeamId}/${awayTeamId}`);
+                    const matchup = await response.json();
+                    setSelectedMatchup({ ...matchup, division });
+                } catch (err) {
+                    console.error('Error fetching matchup:', err);
+                }
+            };
+
+            useEffect(() => {
+                if (authenticated) {
+                    fetchData();
+                    const interval = setInterval(fetchData, 5 * 60 * 1000);
+                    return () => clearInterval(interval);
+                }
+            }, [authenticated]);
+
+            const RefreshIcon = ({ className, spinning }) => (
+                <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            );
+
+            const TrophyIcon = ({ className }) => (
+                <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+            );
+
+            const CloseIcon = ({ className }) => (
+                <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            );
+
+            const Modal = ({ isOpen, onClose, title, children }) => {
+                if (!isOpen) return null;
+
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+                        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-between p-6 border-b">
+                                <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+                                <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                                    <CloseIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                                {children}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            if (!authenticated) {
+                return <PasswordModal onAuthenticated={() => setAuthenticated(true)} />;
+            }
+
+            if (loading && !data) {
+                return (
+                    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                        <div className="text-center">
+                            <RefreshIcon className="animate-spin h-16 w-16 text-green-500 mx-auto mb-4" spinning={true} />
+                            <p className="text-gray-300 text-lg">Loading league data...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (error && !data) {
+                return (
+                    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+                        <div className="bg-red-900 border-l-4 border-red-500 p-6 rounded-lg max-w-md">
+                            <p className="text-red-200 font-semibold">Error loading data</p>
+                            <p className="text-red-300 mt-2">{error}</p>
+                            <button
+                                onClick={fetchData}
+                                className="mt-4 bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            const DivisionPanel = ({ division, color, bgColor, borderColor }) => {
+                const leagueData = data[division];
+
+                return (
+                    <div className="flex-1">
+                        <div className={`${bgColor} rounded-t-lg p-6 border-b-4 ${borderColor}`}>
+                            <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                                <TrophyIcon className="w-8 h-8" />
+                                {division.toUpperCase()} DIVISION
+                            </h2>
+                            <p className="text-gray-200 mt-1">Week {leagueData.currentWeek}</p>
+                        </div>
+
+                        <div className="bg-white p-6">
+                            <h3 className={`text-xl font-bold ${color} mb-4`}>Standings</h3>
+                            <div className="space-y-2">
+                                {leagueData.standings.map((team, idx) => (
+                                    <div
+                                        key={team.id}
+                                        onClick={() => fetchRoster(division, team.id, team.name)}
+                                        className={`flex items-center justify-between p-3 rounded-lg cursor-pointer hover:shadow-md transition-shadow ${
+                                            idx === 0 ? `${bgColor} bg-opacity-10 border-2 ${borderColor}` : 'bg-gray-50 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className={`font-bold text-lg w-6 ${idx === 0 ? color : 'text-gray-500'}`}>
+                                                {idx + 1}
+                                            </span>
+                                            <div>
+                                                <p className="font-semibold text-gray-800">
+                                                    {team.name}
+                                                </p>
+                                                <p className="text-sm text-gray-600 flex items-center gap-1">
+                                                    {team.owner && (
+                                                        <>
+                                                            <span className="text-gray-500">{team.owner}</span>
+                                                            {team.championships && team.championships.length > 0 && (
+                                                                <span className="flex gap-0.5 ml-1">
+                                                                    {team.championships.map((year, idx) => (
+                                                                        <span
+                                                                            key={idx}
+                                                                            className="cursor-help text-base leading-none"
+                                                                            style={{
+                                                                                filter: year === '2024' ? 'none' : 'grayscale(100%) brightness(1.2)',
+                                                                                display: 'inline-block'
+                                                                            }}
+                                                                            title={year}
+                                                                        >
+                                                                            🏆
+                                                                        </span>
+                                                                    ))}
+                                                                </span>
+                                                            )}
+                                                            <span className="mx-1">•</span>
+                                                        </>
+                                                    )}
+                                                    <span className="text-green-600 font-medium">{team.wins}W</span>
+                                                    <span>-</span>
+                                                    <span className="text-red-600 font-medium">{team.losses}L</span>
+                                                    {team.ties > 0 && (
+                                                        <>
+                                                            <span>-</span>
+                                                            <span className="text-gray-600 font-medium">{team.ties}T</span>
+                                                        </>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-6 text-right">
+                                            <div>
+                                                <p className={`font-bold text-lg ${color}`}>{team.points.toFixed(1)}</p>
+                                                <p className="text-xs text-gray-500">PF</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-lg text-gray-600">{team.pointsAgainst.toFixed(1)}</p>
+                                                <p className="text-xs text-gray-500">PA</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-gray-50 p-6">
+                            <h3 className={`text-xl font-bold ${color} mb-4`}>Current Matchups</h3>
+                            <div className="space-y-3">
+                                {leagueData.matchups.map((matchup, idx) => {
+                                    const homeWinning = matchup.homeScore > matchup.awayScore;
+                                    const awayWinning = matchup.awayScore > matchup.homeScore;
+                                    const homeTeam = leagueData.standings.find(t => t.name === matchup.homeTeam);
+                                    const awayTeam = leagueData.standings.find(t => t.name === matchup.awayTeam);
+
+                                    return (
+                                        <div
+                                            key={idx}
+                                            onClick={() => homeTeam && awayTeam && fetchMatchupDetails(division, homeTeam.id, awayTeam.id)}
+                                            className="bg-white rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex-1">
+                                                    <p className={`font-semibold ${homeWinning ? 'text-gray-900' : 'text-gray-500'}`}>
+                                                        {matchup.homeTeam}
+                                                    </p>
+                                                    {homeTeam?.owner && (
+                                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                            <span>{homeTeam.owner}</span>
+                                                            {homeTeam.championships && homeTeam.championships.length > 0 && (
+                                                                <span className="flex gap-0.5">
+                                                                    {homeTeam.championships.map((year, idx) => (
+                                                                        <span
+                                                                            key={idx}
+                                                                            className="cursor-help text-xs"
+                                                                            style={{
+                                                                                filter: year === '2024' ? 'none' : 'grayscale(100%) brightness(1.2)',
+                                                                                display: 'inline-block'
+                                                                            }}
+                                                                            title={year}
+                                                                        >
+                                                                            🏆
+                                                                        </span>
+                                                                    ))}
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                    <p className={`text-2xl font-bold mt-1 ${homeWinning ? color : 'text-gray-400'}`}>
+                                                        {matchup.homeScore.toFixed(1)}
+                                                    </p>
+                                                </div>
+                                                <div className="px-4">
+                                                    <p className="text-gray-400 font-bold">VS</p>
+                                                </div>
+                                                <div className="flex-1 text-right">
+                                                    <p className={`font-semibold ${awayWinning ? 'text-gray-900' : 'text-gray-500'}`}>
+                                                        {matchup.awayTeam}
+                                                    </p>
+                                                    {awayTeam?.owner && (
+                                                        <p className="text-xs text-gray-500 flex items-center justify-end gap-1">
+                                                            <span>{awayTeam.owner}</span>
+                                                            {awayTeam.championships && awayTeam.championships.length > 0 && (
+                                                                <span className="flex gap-0.5">
+                                                                    {awayTeam.championships.map((year, idx) => (
+                                                                        <span
+                                                                            key={idx}
+                                                                            className="cursor-help text-xs"
+                                                                            style={{
+                                                                                filter: year === '2024' ? 'none' : 'grayscale(100%) brightness(1.2)',
+                                                                                display: 'inline-block'
+                                                                            }}
+                                                                            title={year}
+                                                                        >
+                                                                            🏆
+                                                                        </span>
+                                                                    ))}
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                    <p className={`text-2xl font-bold mt-1 ${awayWinning ? color : 'text-gray-400'}`}>
+                                                        {matchup.awayScore.toFixed(1)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-900">
+                    <div className="bg-gray-800 shadow-lg">
+                        <div className="max-w-7xl mx-auto px-6 py-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-white">Hogan Fantasy Football League Summary</h1>
+                                    <p className="text-gray-400 mt-1">Season 2025</p>
+                                </div>
+                                <div className="text-right">
+                                    <button
+                                        onClick={fetchData}
+                                        disabled={loading}
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        <RefreshIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} spinning={loading} />
+                                        Refresh
+                                    </button>
+                                    {lastUpdated && (
+                                        <p className="text-gray-400 text-sm mt-2">
+                                            Updated: {lastUpdated.toLocaleTimeString()}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {data && (
+                                <>
+                                    <DivisionPanel
+                                        division="green"
+                                        color="text-green-600"
+                                        bgColor="bg-green-600"
+                                        borderColor="border-green-600"
+                                    />
+                                    <DivisionPanel
+                                        division="white"
+                                        color="text-gray-700"
+                                        bgColor="bg-gray-700"
+                                        borderColor="border-gray-700"
+                                    />
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <Modal
+                        isOpen={!!selectedRoster}
+                        onClose={() => setSelectedRoster(null)}
+                        title={selectedRoster?.teamName || 'Team Roster'}
+                    >
+                        {selectedRoster && (
+                            <div className="space-y-4">
+                                {selectedRoster.owner && (
+                                    <div className="flex items-center gap-2 text-gray-600 pb-4 border-b">
+                                        <span className="font-semibold">Owner: {selectedRoster.owner}</span>
+                                        {selectedRoster.championships && selectedRoster.championships.length > 0 && (
+                                            <span className="flex gap-1">
+                                                {selectedRoster.championships.map((year, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className="cursor-help text-lg"
+                                                        style={{
+                                                            filter: year === '2024' ? 'none' : 'grayscale(100%) brightness(1.2)',
+                                                            display: 'inline-block'
+                                                        }}
+                                                        title={year}
+                                                    >
+                                                        🏆
+                                                    </span>
+                                                ))}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-800 mb-2">Starters</h3>
+                                    <div className="space-y-2">
+                                        {selectedRoster.roster.filter(p => p.isStarter).map((player, idx) => (
+                                            <div key={idx} className="flex justify-between items-center bg-green-50 p-3 rounded-lg border border-green-200">
+                                                <div>
+                                                    <span className="font-medium text-gray-800">{player.name}</span>
+                                                    <span className="ml-2 text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                                                        {player.slotPosition}
+                                                    </span>
+                                                </div>
+                                                <span className="text-sm text-gray-600">{player.proTeam}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-800 mb-2">Bench</h3>
+                                    <div className="space-y-2">
+                                        {selectedRoster.roster.filter(p => !p.isStarter).map((player, idx) => (
+                                            <div key={idx} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                                                <div>
+                                                    <span className="font-medium text-gray-800">{player.name}</span>
+                                                    <span className="ml-2 text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                                                        {player.position}
+                                                    </span>
+                                                </div>
+                                                <span className="text-sm text-gray-600">{player.proTeam}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </Modal>
+
+                    <Modal
+                        isOpen={!!selectedMatchup}
+                        onClose={() => setSelectedMatchup(null)}
+                        title={selectedMatchup ? `${selectedMatchup.homeTeam} vs ${selectedMatchup.awayTeam}` : 'Matchup Details'}
+                    >
+                        {selectedMatchup && (
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-800">
+                                        {selectedMatchup.homeTeam}
+                                    </h3>
+                                    {selectedMatchup.homeOwner && (
+                                        <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                                            <span>{selectedMatchup.homeOwner}</span>
+                                            {selectedMatchup.homeChampionships && selectedMatchup.homeChampionships.length > 0 && (
+                                                <span className="flex gap-0.5">
+                                                    {selectedMatchup.homeChampionships.map((year, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="cursor-help text-sm"
+                                                            style={{
+                                                                filter: year === '2024' ? 'none' : 'grayscale(100%) brightness(1.2)',
+                                                                display: 'inline-block'
+                                                            }}
+                                                            title={year}
+                                                        >
+                                                            🏆
+                                                        </span>
+                                                    ))}
+                                                </span>
+                                            )}
+                                        </p>
+                                    )}
+                                    <p className="text-2xl font-bold text-green-600 mb-2">{selectedMatchup.homeScore.toFixed(1)}</p>
+                                    <div className="space-y-1">
+                                        {selectedMatchup.homeRoster.map((player, idx) => (
+                                            <div key={idx} className="flex justify-between bg-gray-50 p-2 rounded text-sm">
+                                                <div>
+                                                    <span className="font-medium">{player.name}</span>
+                                                    <span className="ml-1 text-xs text-gray-500">({player.position})</span>
+                                                </div>
+                                                <span className="font-bold text-green-600">{player.points.toFixed(1)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-800">
+                                        {selectedMatchup.awayTeam}
+                                    </h3>
+                                    {selectedMatchup.awayOwner && (
+                                        <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                                            <span>{selectedMatchup.awayOwner}</span>
+                                            {selectedMatchup.awayChampionships && selectedMatchup.awayChampionships.length > 0 && (
+                                                <span className="flex gap-0.5">
+                                                    {selectedMatchup.awayChampionships.map((year, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="cursor-help text-sm"
+                                                            style={{
+                                                                filter: year === '2024' ? 'none' : 'grayscale(100%) brightness(1.2)',
+                                                                display: 'inline-block'
+                                                            }}
+                                                            title={year}
+                                                        >
+                                                            🏆
+                                                        </span>
+                                                    ))}
+                                                </span>
+                                            )}
+                                        </p>
+                                    )}
+                                    <p className="text-2xl font-bold text-green-600 mb-2">{selectedMatchup.awayScore.toFixed(1)}</p>
+                                    <div className="space-y-1">
+                                        {selectedMatchup.awayRoster.map((player, idx) => (
+                                            <div key={idx} className="flex justify-between bg-gray-50 p-2 rounded text-sm">
+                                                <div>
+                                                    <span className="font-medium">{player.name}</span>
+                                                    <span className="ml-1 text-xs text-gray-500">({player.position})</span>
+                                                </div>
+                                                <span className="font-bold text-green-600">{player.points.toFixed(1)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </Modal>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LeagueSummary />);
+    </script>
+</body>
+</html>
